@@ -2,11 +2,11 @@ CodeGenerator
 =============
 Description:
 --------------
-Generates Stored Procedure for Oracle and Sql Server database, Data Access Layer Code and Entity classes
+Generates Stored Procedure for Oracle and Sql Server database, Data Access Layer Code and Entity classes for C#
 
 Requirements:
 --------------
-.Net Framework 3.5 SP1 (WPF)
+.Net Framework 3.5 SP1 (WPF), 
 Oracle Client if you want to generate code from Oracle Database
 
 Configuration:
