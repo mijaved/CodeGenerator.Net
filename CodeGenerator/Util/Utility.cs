@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CodeGenerator.MVP.Util
 {
-    public class Utility
+    public static class Utility
     {
         #region Read Configuration
         public static string GetProjectName()
@@ -158,12 +158,20 @@ namespace CodeGenerator.MVP.Util
             return intValue;
         }
 
-        /// <summary>
-        /// Writes the content in disk file
-        /// </summary>
-        /// <param name="filePath"></param>
-        /// <param name="content"></param>
-        public static void WriteToDisk(string filePath, string content)
+		public static bool In<T>(this T item, params T[] items)
+		{
+			if (items == null)
+				throw new ArgumentNullException("items");
+
+			return items.Contains(item);
+		}
+
+		/// <summary>
+		/// Writes the content in disk file
+		/// </summary>
+		/// <param name="filePath"></param>
+		/// <param name="content"></param>
+		public static void WriteToDisk(string filePath, string content)
         {
             System.IO.StreamWriter fileWriter = null;
             try
@@ -194,5 +202,22 @@ namespace CodeGenerator.MVP.Util
                 }
             }
         }
-    }
+
+		#region Constants
+
+		public static string n0t1(this string str) { return $"\t{str}"; }
+		public static string n0t2(this string str) { return $"\t\t{str}"; }
+		public static string n0t3(this string str) { return $"\t\t\t{str}"; }
+		public static string n0t4(this string str) { return $"\t\t\t\t{str}"; }
+		public static string n0t5(this string str) { return $"\t\t\t\t\t{str}"; }
+
+        public static string n1t0(this string str) { return $"\n{str}"; }
+        public static string n1t1(this string str) { return $"\n\t{str}"; }
+		public static string n1t2(this string str) { return $"\n\t\t{str}"; }
+		public static string n1t3(this string str) { return $"\n\t\t\t{str}"; }
+		public static string n1t4(this string str) { return $"\n\t\t\t\t{str}"; }
+		public static string n1t5(this string str) { return $"\n\t\t\t\t\t{str}"; }
+
+		#endregion
+	}
 }

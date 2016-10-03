@@ -8,9 +8,20 @@ namespace CodeGenerator.MVP.Util
 {
     public class DbBuilderSqlServer : IDbBuilder
     {
-        public DbBuilderSqlServer()
+		string _NUMID = "";
+		string _STRUID = "";
+		string _STRLASTUID = "";
+		string _DTUDT = "";
+		string _DTLASTUDT = "";
+
+		public DbBuilderSqlServer()
         {
-        }
+			_NUMID = Util.Utility.GetPkColName();
+			_STRUID = Util.Utility.GetRecordCreatorColName();
+			_STRLASTUID = Util.Utility.GetRecordModifierColName();
+			_DTUDT = Util.Utility.GetRecordCreateDateColName();
+			_DTLASTUDT = Util.Utility.GetRecordModifiedDateColName();
+		}
 
         public StringBuilder BuildSequence(string strTableName)
         {
@@ -22,108 +33,120 @@ namespace CodeGenerator.MVP.Util
         public StringBuilder BuildSaveProcedure(string strTableName, DataTable dt)
         {
             StringBuilder sb = new StringBuilder();
-            string strProcName = "usp" + strTableName.Replace("T_", "").Replace("t_", "").Replace("tbl", "") + "Save";
+            string strProcName = $"usp{strTableName.Replace("T_", "").Replace("t_", "").Replace("tbl", "")}Save";
 
-            sb.Append("CREATE PROCEDURE " + strProcName + "(");
+            sb.Append($"CREATE PROCEDURE {strProcName}(");
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()))
+                var type = row["DATA_TYPE"].ToString();
+                var col = row["COLUMN_NAME"].ToString();
+
+                if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
                 sb.AppendLine();
 
                 //for UNIQUEIDENTIFIER
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("UNIQUEIDENTIFIER"))
+                if (type.ToUpper().Equals("UNIQUEIDENTIFIER"))
                 {
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "\t" + "VARCHAR(50)" + ",");
+                    sb.Append($"@{col}" + "VARCHAR(50)".n0t1() + ",".n0t1());
                     continue;
                 }
 
-                string strLength = row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR") || row["DATA_TYPE"].ToString().ToUpper().Equals("CHAR") ? " (" + row["MAX_LENGTH"].ToString() + ")" : "";
-                sb.Append("\t @" + row["COLUMN_NAME"] + "\t" + row["DATA_TYPE"].ToString().ToUpper() + strLength + ",");
+                string strLength = type.ToUpper().Equals("VARCHAR") || type.ToUpper().Equals("CHAR") ? " (" + row["MAX_LENGTH"].ToString() + ")" : "";
+                sb.Append($"@{col}" + type.ToUpper().n0t1() + strLength + ",".n0t1());
             }
             //sb.Remove(sb.Length -1, 1); //To Remove last Comma
-            sb.Append("\n\t @" + Util.Utility.GetRecordCreatorColName() + "   VARCHAR(20), \n\t @strMode  CHAR(1),");
+            sb.Append($"@{_STRUID}   VARCHAR(20), \n\t @strMode  CHAR(1),".n1t1());
             sb.Append("\n\t @strErrorCode VARCHAR(50) OUTPUT, --@numErrorCode INT OUTPUT, \n\t @strErrorMsg VARCHAR(200) OUTPUT)");
 
 
-            sb.Append("\n AS");
-            sb.Append("\n\t SET @strErrorCode = 0 --@numErrorCode = 0");
-            sb.Append("\n\t SET @strErrorMsg = 'Successful'");
-            sb.Append("\n\t DECLARE @strSQL VARCHAR(4000);");
-            sb.Append("\n BEGIN");
+            sb.Append("AS".n1t0());
+            sb.Append("SET @strErrorCode = 0 --@numErrorCode = 0".n1t1());
+            sb.Append("SET @strErrorMsg = 'Successful'".n1t1());
+            sb.Append("DECLARE @strSQL VARCHAR(4000);".n1t1());
+            sb.Append("BEGIN".n1t0());
 
             //Insert
-            sb.Append("\n\t IF (@strMode='I')");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t --SET @" + Util.Utility.GetPkColName() + " = NEWID()");
-            sb.Append("\n\t\t INSERT INTO " + strTableName + "(");
+            sb.Append("IF (@strMode='I')".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append($"--SET @{_NUMID} = NEWID()".n1t2());
+            sb.Append("INSERT INTO " + strTableName + "(".n1t2());
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Equals(Util.Utility.GetPkColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()))
+                var type = row["DATA_TYPE"].ToString();
+                var col = row["COLUMN_NAME"].ToString();
+
+                if (col.Equals(_NUMID) ||
+                    col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
                 sb.AppendLine();
-                sb.Append("\t\t\t " + row["COLUMN_NAME"] + ",");
+                sb.Append($"{col},".n0t3());
             }
-            sb.Append("\n\t\t\t " + Util.Utility.GetRecordCreatorColName() + ", \n\t\t\t " + Util.Utility.GetRecordModifierColName() + ")");
+            sb.Append($"{_STRUID}, " + _STRLASTUID.n1t3() + ")".n1t3());
 
-            sb.Append("\n\t\t VALUES(");
+            sb.Append("VALUES(".n1t2());
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Equals(Util.Utility.GetPkColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()))
+                var type = row["DATA_TYPE"].ToString();
+                var col = row["COLUMN_NAME"].ToString();
+
+                if (col.Equals(_NUMID) ||
+                    col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
                 sb.AppendLine();
-                sb.Append("\t\t\t @" + row["COLUMN_NAME"] + ",");
+                sb.Append($"@{col},".n0t3());
             }
-            sb.Append("\n\t\t\t @" + Util.Utility.GetRecordCreatorColName() + ", \n\t\t\t @" + Util.Utility.GetRecordCreatorColName() + ");");
-            sb.Append("\n\t\t --SELECT @@IDENTITY;");
-            sb.Append("\n\t\t SET @" + Util.Utility.GetPkColName() + "=@@identity;");
-            sb.Append("\n\t END");
+            sb.Append($"@{_STRUID}, @{ _STRUID.n1t3()};".n1t3());
+            sb.Append("--SELECT @@IDENTITY;".n1t2());
+            sb.Append($"SET @{_NUMID}=@@identity;".n1t2());
+            sb.Append("END".n1t1());
             
             //Edit
-            sb.Append("\n\t ELSE IF (@strMode='U')");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t UPDATE " + strTableName + " SET");
+            sb.Append("ELSE IF (@strMode='U')".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append("UPDATE " + strTableName + " SET".n1t2());
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Equals(Util.Utility.GetPkColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Equals(_NUMID) ||
+                    col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
                 sb.AppendLine();
-                sb.Append("\t\t\t " + row["COLUMN_NAME"] + " \t = @" + row["COLUMN_NAME"] + ",");
+                sb.Append($"{col} \t = @{col},".n0t3());
             }
-            sb.Append("\n\t\t\t " + Util.Utility.GetRecordModifierColName() + "=@" + Util.Utility.GetRecordCreatorColName() + "");
-            sb.Append("\n\t\t\t WHERE " + Util.Utility.GetPkColName() + "=@" + Util.Utility.GetPkColName() + " ;");
-            sb.Append("\n\t\t --SELECT @" + Util.Utility.GetPkColName() + ";");
-            sb.Append("\n\t END");
+            sb.Append($"{_STRLASTUID}=@{_STRUID}".n1t3());
+            sb.Append($"WHERE {_NUMID}=@{_NUMID} ;".n1t3());
+            sb.Append($"--SELECT @{_NUMID};".n1t2());
+            sb.Append("END".n1t1());
             
             //Delete
-            sb.Append("\n\t ELSE IF (@strMode='D')");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t DELETE FROM " + strTableName + " WHERE " + Util.Utility.GetPkColName() + " = @" + Util.Utility.GetPkColName() + " ;");
-            //sb.Append("\n\t\t UPDATE TBLAUDITMASTER SET STRUSER=p_STRUID WHERE NUMSESSIONID=userenv('sessionid');");
-            sb.Append("\n\t END");
-            sb.Append("\n END");
+            sb.Append("ELSE IF (@strMode='D')".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append($"DELETE FROM {strTableName} WHERE {_NUMID } = @{_NUMID};".n1t2());
+            //sb.Append("UPDATE TBLAUDITMASTER SET STRUSER=p_STRUID WHERE NUMSESSIONID=userenv('sessionid');".n1t2());
+            sb.Append("END".n1t1());
+            sb.Append("END".n1t0());
 
-            sb.Append("\n\t SET @strErrorCode = @" + Util.Utility.GetPkColName()); sb.Append("\t --SET @numErrorCode = @" + Util.Utility.GetPkColName());
-            sb.Append("\n\t IF @@error <> 0 goto procError");
-            sb.Append("\n\t\t goto procEnd");
+            sb.Append($"SET @strErrorCode = @{_NUMID}".n1t1()); sb.Append("--SET @numErrorCode = @" + _NUMID.n0t1());
+            sb.Append("IF @@error <> 0 goto procError".n1t1());
+            sb.Append("goto procEnd".n1t2());
 
-            sb.Append("\n\n\t procError:");
-            sb.Append("\n\t\t SET @strErrorCode = @@error"); sb.Append("\t --SET @numErrorCode = @@error");
-            sb.Append("\n\t\t select @strErrorMsg = [description] from master.dbo.sysmessages where error = @strErrorCode --@numErrorCode");
-            sb.Append("\n\t\t insert into error_log (LogDate,Source,ErrMsg) values (getdate(),'" + strProcName + "',@strErrorMsg)");
+            sb.Append("procError:".n1t0().n1t1());
+            sb.Append("SET @strErrorCode = @@error".n1t2()); sb.Append("--SET @numErrorCode = @@error".n0t1());
+            sb.Append("select @strErrorMsg = [description] from master.dbo.sysmessages where error = @strErrorCode --@numErrorCode".n1t2());
+            sb.Append($"insert into error_log (LogDate,Source,ErrMsg) values (getdate(),'{strProcName}',@strErrorMsg)".n1t2());
 
-            sb.Append("\n procEnd:");
+            sb.Append("procEnd:".n1t0());
             //MessageBox.Show(sb.ToString());
 
             return sb;
@@ -132,168 +155,170 @@ namespace CodeGenerator.MVP.Util
         public StringBuilder BuildGetProcedure(string strTableName, DataTable dt)
         {
             StringBuilder sb = new StringBuilder();
-            string strProcName = "usp" + strTableName.Replace("T_", "").Replace("t_", "").Replace("tbl", "") + "Get";
+            string strProcName = $"usp{strTableName.Replace("T_", "").Replace("t_", "").Replace("tbl", "")}Get";
 
-            sb.Append("CREATE PROCEDURE " + strProcName + "(");
+            sb.Append($"CREATE PROCEDURE {strProcName}(");
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()) ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("IMAGE") || row["DATA_TYPE"].ToString().ToUpper().Equals("TEXT") ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("XML"))
+                var type = row["DATA_TYPE"].ToString();
+                var col = row["COLUMN_NAME"].ToString();
+
+                if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT) ||
+                    type.ToUpper().Equals("IMAGE") || type.ToUpper().Equals("TEXT") ||
+                    type.ToUpper().Equals("XML"))
                     continue;
 
                 sb.AppendLine();
 
                 //for UNIQUEIDENTIFIER
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("UNIQUEIDENTIFIER"))
+                if (type.ToUpper().Equals("UNIQUEIDENTIFIER"))
                 {
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "\t" + "VARCHAR(50)" + ",");
+                    sb.Append($"@{col}\tVARCHAR(50),".n0t1());
                     continue;
                 }
 
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("DATETIME"))
+                if (type.ToUpper().Equals("DATETIME"))
                 {
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "From\t" + "VARCHAR(20)" + ",");
+                    sb.Append($"@{col}From\tVARCHAR(20),".n0t1());
                     sb.AppendLine();
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "To\t" + "VARCHAR(20)" + ",");
+                    sb.Append($"@{col}ToVARCHAR(20),".n0t1());
                     continue;
                 }
 
-                string strLength = row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR") || row["DATA_TYPE"].ToString().ToUpper().Equals("CHAR") ? " (" + row["MAX_LENGTH"].ToString() + ")" : "";
-                sb.Append("\t @" + row["COLUMN_NAME"] + "\t" + row["DATA_TYPE"].ToString().ToUpper() + strLength + ",");
+                string strLength = type.ToUpper().Equals("VARCHAR") || type.ToUpper().Equals("CHAR") ? " (" + row["MAX_LENGTH"].ToString() + ")" : "";
+                sb.Append($"@{col}\t{type.ToUpper() + strLength},".n0t1());
             }
             //sb.Remove(sb.Length -1, 1); //To Remove last Comma
-            sb.Append("\n\t @strMode  VARCHAR(1), --0 for total count, 1 for single detail view, 2 for grid view");
-            sb.Append("\n\t @strSortBy    VARCHAR(50),");
-            sb.Append("\n\t @strSortType  VARCHAR(4),");
-            sb.Append("\n\t @startRowIndex    INT,");
-            sb.Append("\n\t @maximumRows  INT, -- OPTIONAL ; 0 TO GET ALL SELECTED");
-            sb.Append("\n\t @numErrorCode INT OUTPUT,");
-            sb.Append("\n\t @strErrorMsg  VARCHAR(200) OUTPUT)");
+            sb.Append("@strMode  VARCHAR(1), --0 for total count, 1 for single detail view, 2 for grid view".n1t1());
+            sb.Append("@strSortBy    VARCHAR(50),".n1t1());
+            sb.Append("@strSortType  VARCHAR(4),".n1t1());
+            sb.Append("@startRowIndex    INT,".n1t1());
+            sb.Append("@maximumRows  INT, -- OPTIONAL ; 0 TO GET ALL SELECTED".n1t1());
+            sb.Append("@numErrorCode INT OUTPUT,".n1t1());
+            sb.Append("@strErrorMsg  VARCHAR(200) OUTPUT)".n1t1());
 
-            sb.Append("\n AS");
-            sb.Append("\n\t SET NOCOUNT ON");
-            sb.Append("\n\t SET ANSI_NULLS OFF");
-            sb.Append("\n\t SET @numErrorCode = 0");
-            sb.Append("\n\t SET @strErrorMsg = 'Successful'");
-            sb.Append("\n\t DECLARE @strSQL VARCHAR(4000);");
-            sb.Append("\n\t DECLARE @strQry VARCHAR(4000);");
+            sb.Append("AS".n1t0());
+            sb.Append("SET NOCOUNT ON".n1t1());
+            sb.Append("SET ANSI_NULLS OFF".n1t1());
+            sb.Append("SET @numErrorCode = 0".n1t1());
+            sb.Append("SET @strErrorMsg = 'Successful'".n1t1());
+            sb.Append("DECLARE @strSQL VARCHAR(4000);".n1t1());
+            sb.Append("DECLARE @strQry VARCHAR(4000);".n1t1());
 
-            sb.Append("\n BEGIN");
-            sb.Append("\n\t SET @strSQL=''");
-            sb.Append("\n\t SET @strQry =''");
+            sb.Append("BEGIN".n1t0());
+            sb.Append("SET @strSQL=''".n1t1());
+            sb.Append("SET @strQry =''".n1t1());
 
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()) ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("IMAGE") || row["DATA_TYPE"].ToString().ToUpper().Equals("TEXT") ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("XML"))
+                var type = row["DATA_TYPE"].ToString();
+                var col = row["COLUMN_NAME"].ToString();
+
+                if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT) ||
+                    type.ToUpper().Equals("IMAGE") || type.ToUpper().Equals("TEXT") ||
+                    type.ToUpper().Equals("XML"))
                     continue;
 
                 sb.AppendLine();
 
                 //for UNIQUEIDENTIFIER
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("UNIQUEIDENTIFIER"))
+                if (type.ToUpper().Equals("UNIQUEIDENTIFIER"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + ")>0)");
-                    sb.Append("\n\t\t SET @strSQL = @strSQL+' AND T." + row["COLUMN_NAME"] + " = '''+ @" + row["COLUMN_NAME"] + " + ''''");
+                    sb.Append($"IF(LEN(@{col})>0)".n1t1());
+                    sb.Append($"SET @strSQL = @strSQL+' AND T.{col} = '''+ @{col} + ''''".n1t2());
                 }
 
                 //INT/NUMBER/DECIMAL/DOUBLE/FLOAT
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("INT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NUMBER")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("DECIMAL")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("DOUBLE")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("FLOAT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("SMALLINT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NUMERIC")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("MONEY")
+                if (type.ToUpper().Equals("INT") || type.ToUpper().Equals("SMALLINT")
+                    || type.ToUpper().Equals("NUMBER") || type.ToUpper().Equals("DECIMAL")
+                    || type.ToUpper().Equals("DOUBLE") || type.ToUpper().Equals("FLOAT")
+                    || type.ToUpper().Equals("NUMERIC") || type.ToUpper().Equals("MONEY")
                     )
                 {
-                    sb.Append("\n\t IF (@" + row["COLUMN_NAME"] + ">0)");
-                    sb.Append("\n\t\t SET @strSQL = @strSQL+' AND T." + row["COLUMN_NAME"] + " = '+ CAST(@" + row["COLUMN_NAME"] + " AS VARCHAR(" + row["MAX_LENGTH"] + "))");
+                    sb.Append($"IF (@{col}>0)".n1t1());
+                    sb.Append($"SET @strSQL = @strSQL+' AND T.{col} = '+ CAST(@{col} AS VARCHAR(" + row["MAX_LENGTH"] + "))".n1t2());
                 }
 
                 //CHAR/VARCHAR/VARCHAR2/STRING
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR2")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("CHAR")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("STRING")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NVARCHAR"))
+                if (type.ToUpper().Equals("VARCHAR") || type.ToUpper().Equals("VARCHAR2")
+                    || type.ToUpper().Equals("CHAR") || type.ToUpper().Equals("STRING") || type.ToUpper().Equals("NVARCHAR"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + ")>0)");
-                    sb.Append("\n\t\t SET @strSQL = @strSQL+' AND UPPER(T." + row["COLUMN_NAME"] + ") = '''+ UPPER(@" + row["COLUMN_NAME"] + ") + ''''");
-                    //sb.Append("\n\t\t strSql := strSql || ' AND UPPER(T." + row["COLUMN_NAME"] + ") LIKE ''%' || REPLACE(UPPER(p" + row["COLUMN_NAME"] + "),'''','''''') || '%''';");
+                    sb.Append($"IF(LEN(@{col})>0)".n1t1());
+                    sb.Append($"SET @strSQL = @strSQL+' AND UPPER(T.{col}) = '''+ UPPER(@{col}) + ''''".n1t2());
+                    //sb.Append($"strSql := strSql || ' AND UPPER(T.{col}) LIKE ''%' || REPLACE(UPPER(p{col}),'''','''''') || '%''';".n1t2());
                 }
                 //DateTime
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("DATETIME"))
+                if (type.ToUpper().Equals("DATETIME"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + "From)>0 AND LEN(@" + row["COLUMN_NAME"] + "To)>0)");
-                    sb.Append("\n\t\t SET @strSQL = @strSQL+' AND T." + row["COLUMN_NAME"] + " BETWEEN '''+ @" + row["COLUMN_NAME"] + "From + ''' AND ''' + @" + row["COLUMN_NAME"] + "To + ''''");
-                    //sb.Append("\n\t ELSIF p" + row["COLUMN_NAME"] + "From IS NOT NULL  AND p" + row["COLUMN_NAME"] + "To IS NULL  THEN");
-                    //sb.Append("\n\t\t strSql := strSql || ' AND T." + row["COLUMN_NAME"] + " >= '''|| p" + row["COLUMN_NAME"] + "From|| '''' ;");
-                    //sb.Append("\n\t ELSIF p" + row["COLUMN_NAME"] + "From IS NULL AND p" + row["COLUMN_NAME"] + "To IS NOT NULL  THEN");
-                    //sb.Append("\n\t\t strSql := strSql || ' AND T." + row["COLUMN_NAME"] + " <= ''' ||p" + row["COLUMN_NAME"] + "To|| '''';");
+                    sb.Append($"IF(LEN(@{col}From)>0 AND LEN(@{col}To)>0)".n1t1());
+                    sb.Append($"SET @strSQL = @strSQL+' AND T.{col} BETWEEN '''+ @{col}From + ''' AND ''' + @{col}To + ''''".n1t2());
+                    //sb.Append($"ELSIF p{col}From IS NOT NULL  AND p{col}To IS NULL  THEN".n1t1());
+                    //sb.Append($"strSql := strSql || ' AND T.{col} >= '''|| p{col}From|| '''' ;".n1t2());
+                    //sb.Append($"ELSIF p{col}From IS NULL AND p{col}To IS NOT NULL  THEN".n1t1());
+                    //sb.Append($"strSql := strSql || ' AND T.{col} <= ''' ||p{col}To|| '''';".n1t2());
                 }
             }
 
-            sb.Append("\n\n\t -- Paging and Sorting Parameters");
-            sb.Append("\n\t IF(LEN(@strSortBy)=0) set @strSortBy = '" + Util.Utility.GetPkColName() + "'");
-            sb.Append("\n\t IF(LEN(@strSortType)=0) set @strSortType = 'DESC'");
+            sb.Append("-- Paging and Sorting Parameters".n1t0().n1t1());
+            sb.Append($"IF(LEN(@strSortBy)=0) set @strSortBy = '" + _NUMID + "'".n1t1());
+            sb.Append("IF(LEN(@strSortType)=0) set @strSortType = 'DESC'".n1t1());
 
             sb.AppendLine();
 
             //RowCount
-            sb.Append("\n\t IF (@strMode = '0') -- FOR ROW COUNT ");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t SET @strQry ='SELECT COUNT(1) TOTALROWS FROM " + strTableName + " T ");
-            sb.Append("\n\t\t WHERE 0 = 0 ' + @strSQL");
-            sb.Append("\n\t END");
+            sb.Append("IF (@strMode = '0') -- FOR ROW COUNT ".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append($"SET @strQry ='SELECT COUNT(1) TOTALROWS FROM {strTableName} T ".n1t2());
+            sb.Append("WHERE 0 = 0 ' + @strSQL".n1t2());
+            sb.Append("END".n1t1());
             //SelectAll
-            sb.Append("\n\t IF (@strMode = '1') -- GRID VIEW ");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t SET @strQry = 'SELECT * FROM " + strTableName + " T WHERE 0=0 '+ @strSQL");
-            sb.Append("\n\t END");
-            sb.Append("\n\t IF (@strMode = '2') -- Join with Other Related Table");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t SET @strQry = 'WITH T AS (SELECT ROW_NUMBER() OVER (ORDER BY '");
-            sb.Append("\n\t\t + @strSortBy + ' ' + @strSortType + ' ) AS ROWID, * FROM ( SELECT ");
+            sb.Append("IF (@strMode = '1') -- GRID VIEW ".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append($"SET @strQry = 'SELECT * FROM {strTableName} T WHERE 0=0 '+ @strSQL".n1t2());
+            sb.Append("END".n1t1());
+            sb.Append("IF (@strMode = '2') -- Join with Other Related Table".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append("SET @strQry = 'WITH T AS (SELECT ROW_NUMBER() OVER (ORDER BY '".n1t2());
+            sb.Append("+ @strSortBy + ' ' + @strSortType + ' ) AS ROWID, * FROM ( SELECT ".n1t2());
 
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
-                sb.Append("\n\t\t\t " + row["COLUMN_NAME"] + ",");
+                sb.Append($"{col},".n1t3());
             }
             sb.Remove(sb.Length -1, 1); //To Remove last Comma
 
-            sb.Append("\n\t\t FROM " + strTableName + " T WHERE 0=0 '");
-            sb.Append("\n\t\t + @strSQL + ') AS T) SELECT T.* FROM T WHERE 1=1 '");
+            sb.Append($"FROM {strTableName} T WHERE 0=0 '".n1t2());
+            sb.Append("+ @strSQL + ') AS T) SELECT T.* FROM T WHERE 1=1 '".n1t2());
 
-            sb.Append("\n\t\t\t IF(@maximumRows > 0)");
-            sb.Append("\n\t\t\t SET @strQry = @strQry + ' AND ROWID BETWEEN ' ");
-            sb.Append("\n\t\t\t + CAST(@startRowIndex as varchar(20)) + ' and ' ");
-            sb.Append("\n\t\t\t + CAST(@startRowIndex + @maximumRows -1 as varchar(20))	");
-            sb.Append("\n\t END");
+            sb.Append("IF(@maximumRows > 0)".n1t3());
+            sb.Append("SET @strQry = @strQry + ' AND ROWID BETWEEN ' ".n1t3());
+            sb.Append("+ CAST(@startRowIndex as varchar(20)) + ' and ' ".n1t3());
+            sb.Append("+ CAST(@startRowIndex + @maximumRows -1 as varchar(20))	".n1t3());
+            sb.Append("END".n1t1());
 
 
-            //sb.Append("\n\t END");
-            sb.Append("\n\t print(@strQry)");
-            sb.Append("\n\t exec (@strQry)");
-            sb.Append("\n END");
+            //sb.Append("END".n1t1());
+            sb.Append("print(@strQry)".n1t1());
+            sb.Append("exec (@strQry)".n1t1());
+            sb.Append("END".n1t0());
 
-            sb.Append("\n\n\t IF @@error <> 0 GOTO procError");
-            sb.Append("\n\t\t GOTO procEnd");
+            sb.Append("IF @@error <> 0 GOTO procError".n1t0().n1t1());
+            sb.Append("GOTO procEnd".n1t2());
 
-            sb.Append("\n\n procError:");
-            sb.Append("\n\t SET @numErrorCode = @@error");
-            sb.Append("\n\t SELECT @strErrorMsg = [description] FROM master.dbo.sysmessages WHERE error = @numErrorCode");
-            sb.Append("\n\t INSERT INTO error_log (LogDate,Source,ErrMsg) VALUES (getDate(),'" + strProcName + "',@strErrorMsg)");
+            sb.Append("procError:".n1t0().n1t0());
+            sb.Append("SET @numErrorCode = @@error".n1t1());
+            sb.Append("SELECT @strErrorMsg = [description] FROM master.dbo.sysmessages WHERE error = @numErrorCode".n1t1());
+            sb.Append("INSERT INTO error_log (LogDate,Source,ErrMsg) VALUES (getDate(),'" + strProcName + "',@strErrorMsg)".n1t1());
 
-            sb.Append("\n procEnd:");
+            sb.Append("procEnd:".n1t0());
             
             //MessageBox.Show(sb.ToString());
             return sb;
@@ -302,164 +327,169 @@ namespace CodeGenerator.MVP.Util
         public StringBuilder BuildGetProcedureSingle(string strTableName, DataTable dt)
         {
             StringBuilder sb = new StringBuilder();
-            string strProcName = "usp" + strTableName.Replace("T_", "").Replace("t_", "").Replace("tbl", "") + "Get";
+            string strProcName = $"usp{strTableName.Replace("T_", "").Replace("t_", "").Replace("tbl", "")}Get";
 
-            sb.Append("CREATE PROCEDURE " + strProcName + "(");
+            sb.Append($"CREATE PROCEDURE {strProcName}(");
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()) ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("IMAGE") || row["DATA_TYPE"].ToString().ToUpper().Equals("TEXT") ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("XML"))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT) ||
+                    type.ToUpper().Equals("IMAGE") || type.ToUpper().Equals("TEXT") ||
+                    type.ToUpper().Equals("XML"))
                     continue;
 
                 sb.AppendLine();
 
                 //for UNIQUEIDENTIFIER
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("UNIQUEIDENTIFIER"))
+                if (type.ToUpper().Equals("UNIQUEIDENTIFIER"))
                 {
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "\t" + "VARCHAR(50)" + ",");
+                    sb.Append($"@{col}\tVARCHAR(50),".n0t1());
                     continue;
                 }
 
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("DATETIME"))
+                if (type.ToUpper().Equals("DATETIME"))
                 {
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "From\t" + row["DATA_TYPE"].ToString().ToUpper() + ",");
+                    sb.Append($"@{col}From\t{type.ToUpper()},".n0t1());
                     sb.AppendLine();
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "To\t" + row["DATA_TYPE"].ToString().ToUpper() + ",");
+                    sb.Append($"@{col}To\t{type.ToUpper()},".n0t1());
                     continue;
                 }
 
-                string strLength = row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR") || row["DATA_TYPE"].ToString().ToUpper().Equals("CHAR") ? " (" + row["MAX_LENGTH"].ToString() + ")" : "";
-                sb.Append("\t @" + row["COLUMN_NAME"] + "\t" + row["DATA_TYPE"].ToString().ToUpper() + strLength + ",");
+                string strLength = type.ToUpper().Equals("VARCHAR") || type.ToUpper().Equals("CHAR") ? " (" + row["MAX_LENGTH"].ToString() + ")" : "";
+                sb.Append($"@{col}\t{type.ToUpper() + strLength},".n0t1());
             }
-            sb.Append("\n\t @SortBy     VARCHAR(50),");
-            sb.Append("\n\t @SortOrder  VARCHAR(4),");
-            sb.Append("\n\t @startRowIndex    INT,");
-            sb.Append("\n\t @maximumRows  INT, -- OPTIONAL ; 0 TO GET ALL SELECTED");
-            sb.Append("\n\t @numTotalRows	INT OUTPUT,");
-            sb.Append("\n\t @numErrorCode INT OUTPUT,");
-            sb.Append("\n\t @strErrorMsg  VARCHAR(200) OUTPUT)");
+            sb.Append("@SortBy     VARCHAR(50),".n1t1());
+            sb.Append("@SortOrder  VARCHAR(4),".n1t1());
+            sb.Append("@startRowIndex    INT,".n1t1());
+            sb.Append("@maximumRows  INT, -- OPTIONAL ; 0 TO GET ALL SELECTED".n1t1());
+            sb.Append("@numTotalRows	INT OUTPUT,".n1t1());
+            sb.Append("@numErrorCode INT OUTPUT,".n1t1());
+            sb.Append("@strErrorMsg  VARCHAR(200) OUTPUT)".n1t1());
 
-            sb.Append("\n AS");
-            sb.Append("\n\t SET NOCOUNT ON");
-            sb.Append("\n\t SET ANSI_NULLS OFF");
+            sb.Append("AS".n1t0());
+            sb.Append("SET NOCOUNT ON".n1t1());
+            sb.Append("SET ANSI_NULLS OFF".n1t1());
 
-            sb.Append("\n\t DECLARE @strSQL VARCHAR(4000);");
-            sb.Append("\n\t DECLARE @strQry VARCHAR(4000);");
-            sb.Append("\n\t DECLARE @sqlTotal   NVARCHAR(4000);");
-            sb.Append("\n\t DECLARE @ParmDefinition NVARCHAR(1000);");
-            sb.Append("\n\t DECLARE @strEditCondition   VARCHAR(4000);");
+            sb.Append("DECLARE @strSQL VARCHAR(4000);".n1t1());
+            sb.Append("DECLARE @strQry VARCHAR(4000);".n1t1());
+            sb.Append("DECLARE @sqlTotal   NVARCHAR(4000);".n1t1());
+            sb.Append("DECLARE @ParmDefinition NVARCHAR(1000);".n1t1());
+            sb.Append("DECLARE @strEditCondition   VARCHAR(4000);".n1t1());
 
-            sb.Append("\n\t SET @numErrorCode = 0");
-            sb.Append("\n\t SET @strErrorMsg = 'Successful'");
+            sb.Append("SET @numErrorCode = 0".n1t1());
+            sb.Append("SET @strErrorMsg = 'Successful'".n1t1());
 
-            sb.Append("\n BEGIN");
-            sb.Append("\n\t SET @strSQL=''");
-            sb.Append("\n\t SET @strQry =''");
+            sb.Append("BEGIN".n1t0());
+            sb.Append("SET @strSQL=''".n1t1());
+            sb.Append("SET @strQry =''".n1t1());
 
             //Table Name
-            sb.Append("\n\n\t SET @strSQL = ' FROM " + strTableName + " T WHERE 0=0 '");
+            sb.Append($"SET @strSQL = ' FROM {strTableName} T WHERE 0=0 '".n1t0().n1t1());
 
             //Search Params
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()) ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("IMAGE") || row["DATA_TYPE"].ToString().ToUpper().Equals("TEXT") ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("XML"))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT) ||
+                    type.ToUpper().Equals("IMAGE") || type.ToUpper().Equals("TEXT") ||
+                    type.ToUpper().Equals("XML"))
                     continue;
 
                 sb.AppendLine();
 
                 //for UNIQUEIDENTIFIER
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("UNIQUEIDENTIFIER"))
+                if (type.ToUpper().Equals("UNIQUEIDENTIFIER"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + ")>0)");
-                    sb.Append("\n\t\t SET @strSQL = @strSQL+' AND T." + row["COLUMN_NAME"] + " = '''+ @" + row["COLUMN_NAME"] + " + ''''");
+                    sb.Append($"IF(LEN(@{col})>0)".n1t1());
+                    sb.Append($"SET @strSQL = @strSQL+' AND T.{col} = '''+ @{col} + ''''".n1t2());
                 }
 
                 //INT/NUMBER/DECIMAL/DOUBLE/FLOAT
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("INT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NUMBER")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("DECIMAL")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NUMERIC")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("DOUBLE")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("FLOAT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("SMALLINT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("MONEY"))
+                if (type.ToUpper().Equals("INT") || type.ToUpper().Equals("SMALLINT")
+                    || type.ToUpper().Equals("NUMBER") || type.ToUpper().Equals("NUMERIC")
+                    || type.ToUpper().Equals("DECIMAL") || type.ToUpper().Equals("DOUBLE")
+                    || type.ToUpper().Equals("FLOAT") || type.ToUpper().Equals("MONEY"))
                 {
-                    sb.Append("\n\t IF (@" + row["COLUMN_NAME"] + ">0)");
-                    sb.Append("\n\t\t SET @strSQL = @strSQL+' AND T." + row["COLUMN_NAME"] + " = '+ CAST(@" + row["COLUMN_NAME"] + " AS VARCHAR(" + row["MAX_LENGTH"] + "))");
+                    sb.Append($"IF (@{col}>0)".n1t1());
+                    sb.Append($"SET @strSQL = @strSQL+' AND T.{col} = '+ CAST(@{col} AS VARCHAR(" + row["MAX_LENGTH"] + "))".n1t2());
                 }
 
                 //CHAR/VARCHAR/VARCHAR2/STRING
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR2")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("CHAR")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("STRING")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NVARCHAR"))
+                if (type.ToUpper().Equals("VARCHAR")
+                    || type.ToUpper().Equals("VARCHAR2")
+                    || type.ToUpper().Equals("CHAR")
+                    || type.ToUpper().Equals("STRING")
+                    || type.ToUpper().Equals("NVARCHAR"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + ")>0)");
-                    sb.Append("\n\t\t SET @strSQL = @strSQL+' AND UPPER(T." + row["COLUMN_NAME"] + ") = '''+ UPPER(@" + row["COLUMN_NAME"] + ") + ''''");
-                    //sb.Append("\n\t\t strSql := strSql || ' AND UPPER(T." + row["COLUMN_NAME"] + ") LIKE ''%' || REPLACE(UPPER(p" + row["COLUMN_NAME"] + "),'''','''''') || '%''';");
+                    sb.Append($"IF(LEN(@{col})>0)".n1t1());
+                    sb.Append($"SET @strSQL = @strSQL+' AND UPPER(T.{col}) = '''+ UPPER(@{col}) + ''''".n1t1());
+                    //sb.Append($"\n\t\t strSql := strSql || ' AND UPPER(T.{col}) LIKE ''%' || REPLACE(UPPER(p{col}),'''','''''') || '%''';");
                 }
                 //DateTime
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("DATETIME"))
+                if (type.ToUpper().Equals("DATETIME"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + "From)>0 AND LEN(@" + row["COLUMN_NAME"] + "To)>0)");
-                    sb.Append("\n\t\t SET @strSQL = @strSQL+' AND T." + row["COLUMN_NAME"] + " BETWEEN '''+ @" + row["COLUMN_NAME"] + "From + ''' AND ''' + @" + row["COLUMN_NAME"] + "To + ''''");
-                    //sb.Append("\n\t ELSIF p" + row["COLUMN_NAME"] + "From IS NOT NULL  AND p" + row["COLUMN_NAME"] + "To IS NULL  THEN");
-                    //sb.Append("\n\t\t strSql := strSql || ' AND T." + row["COLUMN_NAME"] + " >= '''|| p" + row["COLUMN_NAME"] + "From|| '''' ;");
-                    //sb.Append("\n\t ELSIF p" + row["COLUMN_NAME"] + "From IS NULL AND p" + row["COLUMN_NAME"] + "To IS NOT NULL  THEN");
-                    //sb.Append("\n\t\t strSql := strSql || ' AND T." + row["COLUMN_NAME"] + " <= ''' ||p" + row["COLUMN_NAME"] + "To|| '''';");
+                    sb.Append($"IF(LEN(@{col}From)>0 AND LEN(@{col}To)>0)".n1t1());
+                    sb.Append($"SET @strSQL = @strSQL+' AND T.{col} BETWEEN '''+ @{col}From + ''' AND ''' + @{col}To + ''''".n1t2());
+                    //sb.Append($"\n\t ELSIF p{col}From IS NOT NULL  AND p{col}To IS NULL  THEN");
+                    //sb.Append($"\n\t\t strSql := strSql || ' AND T.{col} >= '''|| p{col}From|| '''' ;");
+                    //sb.Append($"\n\t ELSIF p{col}From IS NULL AND p{col}To IS NOT NULL  THEN");
+                    //sb.Append($"\n\t\t strSql := strSql || ' AND T.{col} <= ''' ||p{col}To|| '''';");
                 }
             }
 
-            sb.Append("\n\n\t SET @ParmDefinition = '@numTotalRowsOUT numeric OUTPUT';");
-            sb.Append("\n\t SET @sqlTotal = 'SELECT @numTotalRowsOUT=count(*) ' + @strSQL");
-            sb.Append("\n\t EXECUTE sp_executesql @sqlTotal, @ParmDefinition, @numTotalRowsOUT = @numTotalRows OUTPUT");
+            sb.Append("SET @ParmDefinition = '@numTotalRowsOUT numeric OUTPUT';".n1t0().n1t1());
+            sb.Append("SET @sqlTotal = 'SELECT @numTotalRowsOUT=count(*) ' + @strSQL".n1t1());
+            sb.Append("EXECUTE sp_executesql @sqlTotal, @ParmDefinition, @numTotalRowsOUT = @numTotalRows OUTPUT".n1t1());
 
-            sb.Append("\n\n\t -- Paging and Sorting Parameters");
-            sb.Append("\n\t IF(LEN(@SortBy)=0) set @SortBy = '" + Util.Utility.GetPkColName() + "'");
-            sb.Append("\n\t IF(LEN(@SortOrder)=0) set @SortOrder = 'DESC'");
+            sb.Append("-- Paging and Sorting Parameters".n1t0().n1t1());
+            sb.Append("IF(LEN(@SortBy)=0) set @SortBy = '" + _NUMID + "'".n1t1());
+            sb.Append("IF(LEN(@SortOrder)=0) set @SortOrder = 'DESC'".n1t1());
 
             sb.AppendLine();
             
             //Select Statement
-            sb.Append("\n\t\t SET @strQry = 'WITH T AS (SELECT ROW_NUMBER() OVER (ORDER BY '");
-            sb.Append("\n\t\t + @SortBy + ' ' + @SortOrder + ' ) AS ROWID, * FROM ( SELECT ");
+            sb.Append("SET @strQry = 'WITH T AS (SELECT ROW_NUMBER() OVER (ORDER BY '".n1t2());
+            sb.Append("+ @SortBy + ' ' + @SortOrder + ' ) AS ROWID, * FROM ( SELECT ".n1t2());
 
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
-                sb.Append("\n\t\t\t " + row["COLUMN_NAME"] + ",");
+                sb.Append($"{col},".n1t3());
             }
             sb.Remove(sb.Length - 1, 1); //To Remove last Comma
             sb.Append(" '");
 
-            sb.Append("\n\t\t + @strSQL + ') AS T) SELECT T.* FROM T WHERE 1=1 '");
+            sb.Append(" + @strSQL + ') AS T) SELECT T.* FROM T WHERE 1=1 '".n1t2());
 
-            sb.Append("\n\t\t IF(@maximumRows > 0)");
-            sb.Append("\n\t\t\t SET @strQry = @strQry + ' AND ROWID BETWEEN ' ");
-            sb.Append("\n\t\t\t + CAST(@startRowIndex as varchar(20)) + ' and ' ");
-            sb.Append("\n\t\t\t + CAST(@startRowIndex + @maximumRows -1 as varchar(20))	");
+            sb.Append(" IF(@maximumRows > 0)".n1t2());
+            sb.Append("SET @strQry = @strQry + ' AND ROWID BETWEEN ' ".n1t3());
+            sb.Append("+ CAST(@startRowIndex as varchar(20)) + ' and ' ".n1t3());
+            sb.Append("+ CAST(@startRowIndex + @maximumRows -1 as varchar(20))	".n1t3());
 
-            sb.Append("\n\t PRINT(@strQry)");
-            sb.Append("\n\t EXEC (@strQry)");
-            sb.Append("\n END");
+            sb.Append("PRINT(@strQry)".n1t1());
+            sb.Append("EXEC (@strQry)".n1t1());
+            sb.Append("END".n1t0());
 
-            sb.Append("\n\n\t IF @@error <> 0 GOTO procError");
-            sb.Append("\n\t\t GOTO procEnd");
+            sb.Append("IF @@error <> 0 GOTO procError".n1t0().n1t1());
+            sb.Append("GOTO procEnd".n1t2());
 
-            sb.Append("\n\n\t procError:");
-            sb.Append("\n\t\t SET @numErrorCode = @@error");
-            sb.Append("\n\t\t SELECT @strErrorMsg = [description] FROM master.dbo.sysmessages WHERE error = @numErrorCode");
-            sb.Append("\n\t\t INSERT INTO error_log (LogDate,Source,ErrMsg) VALUES (getDate(),'" + strProcName + "',@strErrorMsg)");
+            sb.Append("procError:".n1t0().n1t1());
+            sb.Append("SET @numErrorCode = @@error".n1t2());
+            sb.Append("SELECT @strErrorMsg = [description] FROM master.dbo.sysmessages WHERE error = @numErrorCode".n1t2());
+            sb.Append("INSERT INTO error_log (LogDate,Source,ErrMsg) VALUES (getDate(),'" + strProcName + "',@strErrorMsg)".n1t2());
 
-            sb.Append("\n procEnd:");
+            sb.Append("procEnd:".n1t0());
 
             //MessageBox.Show(sb.ToString());
             return sb;
@@ -468,169 +498,171 @@ namespace CodeGenerator.MVP.Util
         public StringBuilder BuildGetProcedureParameterized(string strTableName, DataTable dt)
         {
             StringBuilder sb = new StringBuilder();
-            string strProcName = "usp" + strTableName.Replace("T_", "").Replace("t_", "").Replace("tbl", "") + "Get";
+            string strProcName = $"usp{strTableName.Replace("T_", "").Replace("t_", "").Replace("tbl", "")}Get";
 
             sb.Append("CREATE PROCEDURE " + strProcName + "(");
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()) ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("IMAGE") || row["DATA_TYPE"].ToString().ToUpper().Equals("TEXT") ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("XML"))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT) ||
+                    type.ToUpper().Equals("IMAGE") || type.ToUpper().Equals("TEXT") ||
+                    type.ToUpper().Equals("XML"))
                     continue;
 
                 sb.AppendLine();
 
                 //for UNIQUEIDENTIFIER
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("UNIQUEIDENTIFIER"))
+                if (type.ToUpper().Equals("UNIQUEIDENTIFIER"))
                 {
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "\t" + "VARCHAR(50)" + ",");
+                    sb.Append($"@{col}\t" + "VARCHAR(50)" + ",".n0t1());
                     continue;
                 }
 
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("DATETIME"))
+                if (type.ToUpper().Equals("DATETIME"))
                 {
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "From\t" + "VARCHAR(20)" + ",");
+                    sb.Append($"@{col}From\t" + "VARCHAR(20)" + ",".n0t1());
                     sb.AppendLine();
-                    sb.Append("\t @" + row["COLUMN_NAME"] + "To\t" + "VARCHAR(20)" + ",");
+                    sb.Append($"@{col}To\t" + "VARCHAR(20)" + ",".n0t1());
                     continue;
                 }
 
-                string strLength = row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR") || row["DATA_TYPE"].ToString().ToUpper().Equals("CHAR") ? " (" + row["MAX_LENGTH"].ToString() + ")" : "";
-                sb.Append("\t @" + row["COLUMN_NAME"] + "\t" + row["DATA_TYPE"].ToString().ToUpper() + strLength + ",");
+                string strLength = type.ToUpper().Equals("VARCHAR") || type.ToUpper().Equals("CHAR") ? " (" + row["MAX_LENGTH"].ToString() + ")" : "";
+                sb.Append($"@{col}\t" + type.ToUpper() + strLength + ",".n0t1());
             }
             //sb.Remove(sb.Length -1, 1); //To Remove last Comma
-            sb.Append("\n\t @strMode  VARCHAR(1), --0 for total count, 1 for single detail view, 2 for grid view");
-            sb.Append("\n\t @strSortBy    VARCHAR(50),");
-            sb.Append("\n\t @strSortType  VARCHAR(4),");
-            sb.Append("\n\t @startRowIndex    INT,");
-            sb.Append("\n\t @maximumRows  INT, -- OPTIONAL ; 0 TO GET ALL SELECTED");
-            sb.Append("\n\t @numErrorCode INT OUTPUT,");
-            sb.Append("\n\t @strErrorMsg  VARCHAR(200) OUTPUT)");
+            sb.Append("@strMode  VARCHAR(1), --0 for total count, 1 for single detail view, 2 for grid view".n1t1());
+            sb.Append("@strSortBy    VARCHAR(50),".n1t1());
+            sb.Append("@strSortType  VARCHAR(4),".n1t1());
+            sb.Append("@startRowIndex    INT,".n1t1());
+            sb.Append("@maximumRows  INT, -- OPTIONAL ; 0 TO GET ALL SELECTED".n1t1());
+            sb.Append("@numErrorCode INT OUTPUT,".n1t1());
+            sb.Append("@strErrorMsg  VARCHAR(200) OUTPUT)".n1t1());
 
-            sb.Append("\n AS");
-            sb.Append("\n\t SET NOCOUNT ON");
-            sb.Append("\n\t SET ANSI_NULLS OFF");
-            sb.Append("\n\t SET @numErrorCode = 0");
-            sb.Append("\n\t SET @strErrorMsg = 'Successful'");
+            sb.Append("AS".n1t0());
+            sb.Append("SET NOCOUNT ON".n1t1());
+            sb.Append("SET ANSI_NULLS OFF".n1t1());
+            sb.Append("SET @numErrorCode = 0".n1t1());
+            sb.Append("SET @strErrorMsg = 'Successful'".n1t1());
 
-            sb.Append("\n BEGIN");
+            sb.Append("BEGIN".n1t0());
 
             sb.AppendLine();
             StringBuilder sbSearchParams = new StringBuilder();
             StringBuilder sbSortParams = new StringBuilder();
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()) ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("IMAGE") || row["DATA_TYPE"].ToString().ToUpper().Equals("TEXT") ||
-                    row["DATA_TYPE"].ToString().ToUpper().Equals("XML"))
+                var type = row["DATA_TYPE"].ToString();
+                var col = row["COLUMN_NAME"].ToString();
+
+                if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT) ||
+                    type.ToUpper().Equals("IMAGE") || type.ToUpper().Equals("TEXT") ||
+                    type.ToUpper().Equals("XML"))
                     continue;
 
                 //for UNIQUEIDENTIFIER
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("UNIQUEIDENTIFIER"))
+                if (type.ToUpper().Equals("UNIQUEIDENTIFIER"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + ") <> 36)");
-                    sb.Append("\t SET @" + row["COLUMN_NAME"] + " = NULL;");
+                    sb.Append($"IF(LEN(@{col}) <> 36)".n1t1());
+                    sb.Append($"SET @{col} = NULL;".n0t1());
 
-                    sbSearchParams.Append("\n\t\t AND ( T." + row["COLUMN_NAME"] + " = @" + row["COLUMN_NAME"] + " OR @" + row["COLUMN_NAME"] + " IS NULL )");
+                    sbSearchParams.Append($"AND ( T.{col} = @{col} OR @{col} IS NULL )".n1t2());
                 }
 
                 //INT/NUMBER/DECIMAL/DOUBLE/FLOAT
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("INT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NUMBER")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("DECIMAL")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("DOUBLE")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("FLOAT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("SMALLINT")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NUMERIC")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("MONEY")
+                if (type.ToUpper().Equals("INT") || type.ToUpper().Equals("SMALLINT")
+                    || type.ToUpper().Equals("NUMBER") || type.ToUpper().Equals("DECIMAL")
+                    || type.ToUpper().Equals("DOUBLE") || type.ToUpper().Equals("FLOAT")
+                    || type.ToUpper().Equals("NUMERIC") || type.ToUpper().Equals("MONEY")
                     )
                 {
-                    sbSearchParams.Append("\n\t\t AND ( T." + row["COLUMN_NAME"] + " = @" + row["COLUMN_NAME"] + " OR @" + row["COLUMN_NAME"] + " <= 0 )");
+                    sbSearchParams.Append($"AND ( T.{col} = @{col} OR @{col} <= 0 )".n1t2());
                 }
 
                 //CHAR/VARCHAR/VARCHAR2/STRING
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("VARCHAR2")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("CHAR")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("STRING")
-                    || row["DATA_TYPE"].ToString().ToUpper().Equals("NVARCHAR"))
+                if (type.ToUpper().Equals("VARCHAR") || type.ToUpper().Equals("VARCHAR2")
+                    || type.ToUpper().Equals("CHAR") || type.ToUpper().Equals("STRING") || type.ToUpper().Equals("NVARCHAR"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + ")=0)");
-                    sb.Append("\t SET @" + row["COLUMN_NAME"] + " = NULL;");
+                    sb.Append($"\n\t IF(LEN(@{col})=0)".n1t1());
+                    sb.Append($"\t SET @{col} = NULL;".n0t1());
 
-                    sbSearchParams.Append("\n\t\t AND ( T." + row["COLUMN_NAME"] + " = @" + row["COLUMN_NAME"] + " OR @" + row["COLUMN_NAME"] + " IS NULL )");
+                    sbSearchParams.Append($"\n\t\t AND ( T.{col} = @{col} OR @{col} IS NULL )".n1t2());
                 }
 
                 //DateTime
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("DATETIME"))
+                if (type.ToUpper().Equals("DATETIME"))
                 {
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + "From)=0)");
-                    sb.Append("\t SET @" + row["COLUMN_NAME"] + "From = NULL;");
+                    sb.Append($"\n\t IF(LEN(@{col}From)=0)".n1t1());
+                    sb.Append($"\t SET @{col}From = NULL;".n0t1());
 
-                    sb.Append("\n\t IF(LEN(@" + row["COLUMN_NAME"] + "To)=0)");
-                    sb.Append("\t SET @" + row["COLUMN_NAME"] + "To = NULL;");
+                    sb.Append($"\n\t IF(LEN(@{col}To)=0)".n1t1());
+                    sb.Append($"\t SET @{col} To = NULL;".n0t1());
 
-                   //sbConditions.Append("\n\t\t AND T." + row["COLUMN_NAME"] + " BETWEEN '''+ @" + row["COLUMN_NAME"] + "From + ''' AND ''' + @" + row["COLUMN_NAME"] + "To + ''''");
-                    sbSearchParams.Append("\n\t\t AND (T." + row["COLUMN_NAME"] + " >= + @" + row["COLUMN_NAME"] + "From + OR + @" + row["COLUMN_NAME"] + "From + IS NULL)");
-                    sbSearchParams.Append("\n\t\t AND (T." + row["COLUMN_NAME"] + " <= + @" + row["COLUMN_NAME"] + "To + OR + @" + row["COLUMN_NAME"] + "To + IS NULL)");
+                    //sbConditions.Append("\n\t\t AND T." + col + " BETWEEN '''+ @" + col + "From + ''' AND ''' + @" + col + "To + ''''");
+                    sbSearchParams.Append($"AND (T.{col} >= + @{col}From + OR + @{col}From + IS NULL)".n1t2());
+                    sbSearchParams.Append($"AND (T.{col} <= + @{col}To + OR + @{col}To + IS NULL)".n1t2());
                 }
 
                 //SortParams
-                sbSortParams.Append("\n\t\t CASE WHEN UPPER(@strSortBy) = '" + row["COLUMN_NAME"].ToString().ToUpper() + "' AND UPPER(@strSortType) = 'ASC' THEN " + row["COLUMN_NAME"] + " END ASC,");
-                sbSortParams.Append("\n\t\t CASE WHEN UPPER(@strSortBy) = '" + row["COLUMN_NAME"].ToString().ToUpper() + "' AND UPPER(@strSortType) = 'DESC' THEN " + row["COLUMN_NAME"] + " END DESC,");
+                sbSortParams.Append($"CASE WHEN UPPER(@strSortBy) = '{col.ToUpper()}' AND UPPER(@strSortType) = 'ASC' THEN {col} END ASC,".n1t2());
+                sbSortParams.Append($"CASE WHEN UPPER(@strSortBy) = '{col.ToUpper()}' AND UPPER(@strSortType) = 'DESC' THEN {col} END DESC,".n1t2());
             }
-            sbSortParams.Append("\n\t\t CASE WHEN (@strSortBy IS NULL OR @strSortBy = '') THEN " + Util.Utility.GetPkColName() + " END DESC");
+            sbSortParams.Append($"CASE WHEN (@strSortBy IS NULL OR @strSortBy = '') THEN {_NUMID} END DESC".n1t2());
 
             sb.AppendLine();
 
             //RowCount
-            sb.Append("\n\t IF (@strMode = '0') -- FOR ROW COUNT ");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t SELECT COUNT(1) TOTALROWS FROM " + strTableName + " T ");
-            sb.Append("\n\t\t WHERE 0 = 0 ");
+            sb.Append("IF (@strMode = '0') -- FOR ROW COUNT ".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append("SELECT COUNT(1) TOTALROWS FROM " + strTableName + " T ".n1t2());
+            sb.Append("WHERE 0 = 0 ".n1t2());
             sb.Append(sbSearchParams.ToString());
-            sb.Append("\n\t END");
+            sb.Append("END".n1t1());
             //SelectAll
-            sb.Append("\n\t IF (@strMode = '1') -- For Populate ");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t SELECT T.* FROM " + strTableName + " T WHERE 0=0 ");
+            sb.Append("IF (@strMode = '1') -- For Populate ".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append("SELECT T.* FROM " + strTableName + " T WHERE 0=0 ".n1t2());
             sb.Append(sbSearchParams.ToString());
-            sb.Append("\n\t END");
-            sb.Append("\n\t IF (@strMode = '2') -- Grid View and Join with Other Related Table");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t WITH T AS (SELECT ROW_NUMBER() OVER (ORDER BY ");
+            sb.Append("END".n1t1());
+            sb.Append("IF (@strMode = '2') -- Grid View and Join with Other Related Table".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append("WITH T AS (SELECT ROW_NUMBER() OVER (ORDER BY ".n1t2());
             sb.Append(sbSortParams.ToString());
-            sb.Append("\n\t\t ) AS ROWID, * FROM ( SELECT ");
+            sb.Append(") AS ROWID, * FROM ( SELECT ".n1t2());
 
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreatorColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifierColName()) ||
-                    row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordCreateDateColName()) || row["COLUMN_NAME"].ToString().Contains(Util.Utility.GetRecordModifiedDateColName()))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
-                sb.Append("\n\t\t\t T." + row["COLUMN_NAME"] + ",");
+                sb.Append("T." + col + ",".n1t3());
             }
             sb.Remove(sb.Length - 1, 1); //To Remove last Comma
 
-            sb.Append("\n\t\t FROM " + strTableName + " T WHERE 0=0 ");
+            sb.Append("FROM " + strTableName + " T WHERE 0=0 ".n1t2());
             sb.Append(sbSearchParams.ToString());
-            sb.Append("\n\t\t ) AS T) SELECT T.* FROM T WHERE 1=1 ");
-            sb.Append("\n\t\t AND (ROWID >= @startRowIndex OR @startRowIndex IS NULL OR @startRowIndex <= 0)");
-            sb.Append("\n\t\t AND (ROWID <= @startRowIndex + @maximumRows - 1 OR @maximumRows IS NULL OR @maximumRows <= 0)");
-            sb.Append("\n\t END");
+            sb.Append(") AS T) SELECT T.* FROM T WHERE 1=1 ".n1t2());
+            sb.Append("AND (ROWID >= @startRowIndex OR @startRowIndex IS NULL OR @startRowIndex <= 0)".n1t2());
+            sb.Append("AND (ROWID <= @startRowIndex + @maximumRows - 1 OR @maximumRows IS NULL OR @maximumRows <= 0)".n1t2());
+            sb.Append("END".n1t1());
 
-            sb.Append("\n END");
+            sb.Append("END".n1t0());
 
-            sb.Append("\n\n\t IF @@error <> 0 GOTO procError");
-            sb.Append("\n\t\t GOTO procEnd");
+            sb.Append("IF @@error <> 0 GOTO procError".n1t0().n1t1());
+            sb.Append("GOTO procEnd".n1t2());
 
-            sb.Append("\n\n\t procError:");
-            sb.Append("\n\t\t SET @numErrorCode = @@error");
-            sb.Append("\n\t\t SELECT @strErrorMsg = [description] FROM master.dbo.sysmessages WHERE error = @numErrorCode");
-            sb.Append("\n\t\t INSERT INTO error_log (LogDate,Source,ErrMsg) VALUES (getDate(),'" + strProcName + "',@strErrorMsg)");
+            sb.Append("procError:".n1t0().n1t1());
+            sb.Append("SET @numErrorCode = @@error".n1t2());
+            sb.Append("SELECT @strErrorMsg = [description] FROM master.dbo.sysmessages WHERE error = @numErrorCode".n1t2());
+            sb.Append("INSERT INTO error_log (LogDate,Source,ErrMsg) VALUES (getDate(),'" + strProcName + "',@strErrorMsg)".n1t2());
 
-            sb.Append("\n procEnd:");
+            sb.Append("procEnd:".n1t0());
 
             //MessageBox.Show(sb.ToString());
             return sb;

@@ -8,12 +8,12 @@ using System.Windows;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("CodeGenerator.MVP")]
-[assembly: AssemblyDescription("Created by Md.Ismail")]
+[assembly: AssemblyDescription("Utility to generate backend code like Stored Procedure, Entity, Data Acceess Layer (DAL), Business Logic Layer (BLL) for CRUD operation on tables of both Oracle and Sql Server")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("TVL")]
 [assembly: AssemblyProduct("CodeGenerator.MVP")]
-[assembly: AssemblyCopyright("Copyright © TVL 2011")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCopyright("Copyright © mijaved 2016")]
+[assembly: AssemblyTrademark("Created by Md.Ismail")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
@@ -51,7 +51,7 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
 
 //IntallationPath: C:\Users\<CurrentUser>\AppData\Local\Apps\2.0\77QRC1HQ.A3N\NEBBNPEV.D98

@@ -68,11 +68,11 @@ namespace CodeGenerator.MVP.DAL
 
             if (Util.Utility.GetSelectedDB().Equals("Oracle"))
             {
-                cmd = new OleDbCommand("SELECT t.COLUMN_NAME, t.DATA_TYPE, t.CHAR_LENGTH AS MAX_LENGTH, NVL(t.DATA_PRECISION, 0) AS PRECISION, NVL(t.DATA_SCALE, 0) AS SCALE from user_tab_columns t where t.TABLE_NAME = '" + strTableName + "'", con);
+                cmd = new OleDbCommand($"SELECT t.COLUMN_NAME, t.DATA_TYPE, t.CHAR_LENGTH AS MAX_LENGTH, NVL(t.DATA_PRECISION, 0) AS PRECISION, NVL(t.DATA_SCALE, 0) AS SCALE from user_tab_columns t where t.TABLE_NAME = '{strTableName}'", con);
             }
             else if (Util.Utility.GetSelectedDB().Equals("SqlServer"))
             {
-                cmd = new OleDbCommand("SELECT cl.name AS COLUMN_NAME, tp.name AS DATA_TYPE, cl.Max_Length AS MAX_LENGTH, cl.Precision AS PRECISION, cl.Scale AS SCALE FROM sys.columns cl JOIN  sys.systypes tp ON tp.xtype = cl.system_type_id WHERE object_id = OBJECT_ID('dbo." + strTableName + "') AND tp.status = 0 Order by cl.Column_ID", con);
+                cmd = new OleDbCommand($"SELECT cl.name AS COLUMN_NAME, tp.name AS DATA_TYPE, cl.Max_Length AS MAX_LENGTH, cl.Precision AS PRECISION, cl.Scale AS SCALE FROM sys.columns cl JOIN  sys.systypes tp ON tp.xtype = cl.system_type_id WHERE object_id = OBJECT_ID('dbo.{strTableName}') AND tp.status = 0 Order by cl.Column_ID", con);
             }
 
             OleDbDataReader dr = null;

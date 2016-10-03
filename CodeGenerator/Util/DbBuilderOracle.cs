@@ -27,13 +27,7 @@ namespace CodeGenerator.MVP.Util
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine();
-            sb.Append("CREATE SEQUENCE Seq" + strTableName);
-            sb.Append("\n\t START WITH 1");
-            sb.Append("\n\t MAXVALUE 999999999999999999999999999");
-            sb.Append("\n\t MINVALUE 1");
-            sb.Append("\n\t NOCYCLE");
-            sb.Append("\n\t NOCACHE");
-            sb.Append("\n\t NOORDER;");
+            sb.Append($"CREATE SEQUENCE Seq{strTableName} START WITH 1 MAXVALUE 999999999999999999999999999 MINVALUE 1 NOCYCLE NOCACHE NOORDER;");
 
             return sb;
         }
@@ -41,88 +35,84 @@ namespace CodeGenerator.MVP.Util
         public StringBuilder BuildSaveProcedure(string strTableName, DataTable dt)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("PROCEDURE usp" + strTableName.Replace("T_", "").Replace("t_", "") + "Save(");
+            sb.Append($"PROCEDURE usp{strTableName.Replace("T_", "").Replace("t_", "")}Save(");
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(_STRUID) || row["COLUMN_NAME"].ToString().Contains(_STRLASTUID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_DTUDT) || row["COLUMN_NAME"].ToString().Contains(_DTLASTUDT))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) || col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
-                sb.AppendLine();
-                sb.Append("\t\t p" + row["COLUMN_NAME"] + "\t" + row["DATA_TYPE"] + ",");
+                sb.Append($"p{col}\t{type},".n1t1());
             }
             //sb.Remove(sb.Length -1, 1); //To Remove last Comma
-            sb.Append("\n\t\t p_" + _STRUID + "   VARCHAR2, \n\t\t p_STRMODE  VARCHAR2, \n\t\t po_errorcode OUT NUMBER, \n\t\t po_errormessage OUT VARCHAR2)");
-
-
-            sb.Append("\n\t IS");
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t po_errorcode:=0;");
-            sb.Append("\n\t\t po_errormessage:='SUCCESSFUL';");
+            sb.Append($"p_{_STRUID}  VARCHAR2, {"p_STRMODE".n1t2()}  VARCHAR2, {"po_errorcode".n1t2()}  OUT NUMBER, {"po_errormessage".n1t2()}  OUT VARCHAR2)".n1t2());
+			
+            sb.Append("IS".n1t1());
+            sb.Append("BEGIN".n1t1());
+            sb.Append("po_errorcode:=0;".n1t2());
+            sb.Append("po_errormessage:='SUCCESSFUL';".n1t2());
 
             //Insert
-            sb.Append("\n\t\t IF(UPPER(p_STRMODE)='I') THEN");
-            sb.Append("\n\t\t\t INSERT INTO " + strTableName + "(" + _NUMID + ",");
+            sb.Append("IF(UPPER(p_STRMODE)='I') THEN".n1t2());
+            sb.Append($"INSERT INTO {strTableName}({_NUMID},".n1t3());
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(_NUMID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_STRUID) || row["COLUMN_NAME"].ToString().Contains(_STRLASTUID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_DTUDT) || row["COLUMN_NAME"].ToString().Contains(_DTLASTUDT))
+				var col = row["COLUMN_NAME"].ToString();
+				if (col.Contains(_NUMID) || col.Contains(_STRUID) || col.Contains(_STRLASTUID) || col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
-                sb.AppendLine();
-                sb.Append("\t\t\t\t " + row["COLUMN_NAME"] + ",");
+                sb.Append($"{col},".n1t4());
             }
-            sb.Append("\n\t\t\t\t STRUID, \n\t\t\t\t STRLASTUID, \n\t\t\t\t DTUDT, \n\t\t\t\t DTLASTUDT)");
+            sb.Append($"{_STRUID.n1t4()}, {_STRLASTUID.n1t4()}, {_DTUDT.n1t4()}, {_DTLASTUDT.n1t4()})");
 
-            sb.Append("\n\t\t\t VALUES(" + "Seq" + strTableName + ".NextVal,");
+
+			sb.Append($"VALUES(Seq{strTableName }.NextVal,".n1t3());
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(_NUMID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_STRUID) || row["COLUMN_NAME"].ToString().Contains(_STRLASTUID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_DTUDT) || row["COLUMN_NAME"].ToString().Contains(_DTLASTUDT))
+				var col = row["COLUMN_NAME"].ToString();
+				if (col.Contains(_NUMID) || col.Contains(_STRUID) || col.Contains(_STRLASTUID) || col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
-                sb.AppendLine();
-                sb.Append("\t\t\t\t p" + row["COLUMN_NAME"] + ",");
+                sb.Append($"p{col},".n1t4());
             }
-            sb.Append("\n\t\t\t\t p_" + _STRUID + ", \n\t\t\t\t p_" + _STRUID + ", \n\t\t\t\t sysdate, \n\t\t\t\t sysdate);");
-            sb.Append("\n\t\t\t SELECT " + "Seq" + strTableName + ".CURRVAL INTO po_errorcode FROM dual;");
+            sb.Append($"p_{_STRUID.n1t4()},p_{_STRUID.n1t4()},{"sysdate".n1t4()},{"sysdate".n1t4()});");
+            sb.Append($"SELECT Seq{strTableName}.CURRVAL INTO po_errorcode FROM dual;".n1t3());
 
             //Edit
-            sb.Append("\n\t\t ELSIF(UPPER(p_STRMODE)='U') THEN");
-            sb.Append("\n\t\t\t UPDATE " + strTableName + " SET");
+            sb.Append("ELSIF(UPPER(p_STRMODE)='U') THEN".n1t2());
+            sb.Append($"UPDATE {strTableName} SET".n1t3());
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(_NUMID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_STRUID) || row["COLUMN_NAME"].ToString().Contains(_STRLASTUID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_DTUDT) || row["COLUMN_NAME"].ToString().Contains(_DTLASTUDT))
+				var col = row["COLUMN_NAME"].ToString();
+				if (col.Contains(_NUMID) || col.Contains(_STRUID) || col.Contains(_STRLASTUID) || col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
                 sb.AppendLine();
-                sb.Append("\t\t\t\t " + row["COLUMN_NAME"] + " \t = p" + row["COLUMN_NAME"] + ",");
+                sb.Append($"{col}\t= p{col},".n0t4());
             }
-            sb.Append("\n\t\t\t\t " + _STRLASTUID + " = p_" + _STRUID + ", \n\t\t\t\t " + _DTLASTUDT + " = sysdate");
-            sb.Append("\n\t\t\t\t WHERE " + _NUMID + " = p" + _NUMID + ";");
-            sb.Append("\n\t\t\t SELECT p" + _NUMID + " INTO po_errorcode FROM dual;");
-            sb.Append("\n\t\t\t --UPDATE TBLAUDITMASTER SET STRUSER=p_STRUID WHERE NUMSESSIONID=userenv('sessionid');");
+            sb.Append($"{_STRLASTUID} = p_{_STRUID},".n1t4());
+			sb.Append($"{_DTLASTUDT} = sysdate".n1t4());
+			sb.Append($"WHERE {_NUMID} = p{_NUMID};".n1t4());
+            sb.Append($"SELECT p{_NUMID} INTO po_errorcode FROM dual;".n1t3());
+            sb.Append("--UPDATE TBLAUDITMASTER SET STRUSER=p_STRUID WHERE NUMSESSIONID=userenv('sessionid');".n1t3());
             //Delete
-            sb.Append("\n\t\t ELSIF(UPPER(p_STRMODE)='D') THEN");
-            sb.Append("\n\t\t\t DELETE FROM " + strTableName + " WHERE " + _NUMID + " = p" + _NUMID + ";");
-            sb.Append("\n\t\t\t UPDATE TBLAUDITMASTER SET STRUSER=p_STRUID WHERE NUMSESSIONID=userenv('sessionid');");
+            sb.Append("ELSIF(UPPER(p_STRMODE)='D') THEN".n1t2());
+            sb.Append($"DELETE FROM {strTableName} WHERE {_NUMID} = p{_NUMID};".n1t3());
+            sb.Append("UPDATE TBLAUDITMASTER SET STRUSER=p_STRUID WHERE NUMSESSIONID=userenv('sessionid');".n1t3());
 
-            sb.Append("\n\t\t ELSE");
-            sb.Append("\n\t\t\t po_errorcode:=1;");
-            sb.Append("\n\t\t\t po_errormessage:='Invalid Mode, No operations done';");
-            sb.Append("\n\t\t END IF;");
+            sb.Append("ELSE".n1t2());
+            sb.Append("po_errorcode:=1;".n1t3());
+            sb.Append("po_errormessage:='Invalid Mode, No operations done';".n1t3());
+            sb.Append("END IF;".n1t2());
 
-            sb.Append("\n\n\t\t EXCEPTION WHEN OTHERS THEN");
-            sb.Append("\n\t\t\t po_errorcode := SQLCODE;");
-            sb.Append("\n\t\t\t po_errormessage := SQLERRM;");
+			sb.AppendLine();
+            sb.Append("EXCEPTION WHEN OTHERS THEN".n1t2());
+            sb.Append("po_errorcode := SQLCODE;".n1t3());
+            sb.Append("po_errormessage := SQLERRM;".n1t3());
 
-            sb.Append("\n\t END;");
-
-            //MessageBox.Show(sb.ToString());
+            sb.Append("END;".n1t1());
 
             return sb;
         }
@@ -130,117 +120,126 @@ namespace CodeGenerator.MVP.Util
         public StringBuilder BuildGetProcedure(string strTableName, DataTable dt)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("PROCEDURE usp" + strTableName.Replace("T_", "").Replace("t_", "") + "Get(");
+            sb.Append($"PROCEDURE usp{strTableName.Replace("T_", "").Replace("t_", "")}Get(");
             foreach (DataRow row in dt.Rows)
             {
-                if (row["COLUMN_NAME"].ToString().Contains(_STRUID) || row["COLUMN_NAME"].ToString().Contains(_STRLASTUID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_DTUDT) || row["COLUMN_NAME"].ToString().Contains(_DTLASTUDT))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) ||
+                    col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
                 sb.AppendLine();
 
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("DATE"))
+                if (type.ToUpper().Equals("DATE"))
                 {
-                    sb.Append("\t\t p" + row["COLUMN_NAME"] + "From\t" + row["DATA_TYPE"] + ",");
-                    sb.AppendLine();
-                    sb.Append("\t\t p" + row["COLUMN_NAME"] + "To\t" + row["DATA_TYPE"] + ",");
+                    sb.Append($"p{col}From\t{type},".n0t2());
+                    sb.Append($"p{col}To\t{type},".n1t2());
                     continue;
                 }
 
-                sb.Append("\t\t p" + row["COLUMN_NAME"] + "\t" + row["DATA_TYPE"] + ",");
+                sb.Append($"p{col}\t{type},".n0t2());
             }
             //sb.Remove(sb.Length -1, 1); //To Remove last Comma
-            sb.Append("\n\t\t p_NUMMODE   NUMBER,");
-            sb.Append("\n\t\t p_SORTEXPRESSION  VARCHAR2,");
-            sb.Append("\n\t\t p_SORTDIRECTION VARCHAR2,");
-            sb.Append("\n\t\t p_STARTROW   NUMBER, --  START INDEX");
-            sb.Append("\n\t\t p_MAXROWS   NUMBER, -- OPTIONAL ; 0 TO GET ALL SELECTED");
-            sb.Append("\n\t\t po_errorcode OUT    NUMBER,");
-            sb.Append("\n\t\t po_errormessage OUT VARCHAR2,");
-            sb.Append("\n\t\t po_cursor OUT Types.Ref_Cursor)");
+            sb.Append("p_NUMMODE   NUMBER,".n1t2());
+            sb.Append("p_SORTEXPRESSION  VARCHAR2,".n1t2());
+            sb.Append("p_SORTDIRECTION VARCHAR2,".n1t2());
+            sb.Append("p_STARTROW   NUMBER, --  START INDEX".n1t2());
+            sb.Append("p_MAXROWS   NUMBER, -- OPTIONAL ; 0 TO GET ALL SELECTED".n1t2());
+            sb.Append("po_errorcode OUT    NUMBER,".n1t2());
+            sb.Append("po_errormessage OUT VARCHAR2,".n1t2());
+            sb.Append("po_cursor OUT Types.Ref_Cursor)".n1t2());
 
-            sb.Append("\n\t IS");
-            sb.Append("\n\t\t strSql VARCHAR2(5000) DEFAULT '';");
+            sb.Append("IS".n1t1());
+            sb.Append("strSql VARCHAR2(5000) DEFAULT '';".n1t2());
 
-            sb.Append("\n\t BEGIN");
-            sb.Append("\n\t\t po_errorcode:=0;");
-            sb.Append("\n\t\t po_errormessage:='SUCCESSFUL';");
-            sb.Append("\n");
+            sb.Append("BEGIN".n1t1());
+            sb.Append("po_errorcode:=0;".n1t2());
+            sb.Append("po_errormessage:='SUCCESSFUL';".n1t2());
+            sb.AppendLine();
 
             //RowCount
-            sb.Append("\n\t\t IF (p_NUMMODE=0) THEN    -- FOR ROW COUNT ");
-            sb.Append("\n\t\t\t strSql := 'SELECT COUNT(1) NUMROWS FROM " + strTableName + " T ");
-            sb.Append("\n\t\t\t WHERE 0 = 0 ';");
+            sb.Append("IF (p_NUMMODE=0) THEN    -- FOR ROW COUNT ".n1t2());
+            sb.Append("strSql := 'SELECT COUNT(1) NUMROWS FROM " + strTableName + " T ".n1t3());
+            sb.Append("WHERE 0 = 0 ';".n1t3());
 
             //SelectAll
-            sb.Append("\n\t\t ELSIF (p_NUMMODE=1) THEN -- GRID VIEW ");
-            sb.Append("\n\t\t\t strSql := 'SELECT * FROM (SELECT T.*,rowNum as ROWINDEX FROM (");
-            sb.Append("\n\t\t\t SELECT T.* FROM " + strTableName + " T ");
-            sb.Append("\n\t\t\t WHERE 0 = 0 ';");
+            sb.Append("ELSIF (p_NUMMODE=1) THEN -- GRID VIEW ".n1t2());
+            sb.Append("strSql := 'SELECT * FROM (SELECT T.*,rowNum as ROWINDEX FROM (".n1t3());
+            sb.Append("SELECT T.* FROM " + strTableName + " T ".n1t3());
+            sb.Append("WHERE 0 = 0 ';".n1t3());
 
-            sb.Append("\n\t\t END IF;");
+            sb.Append("END IF;".n1t2());
 
             foreach (DataRow row in dt.Rows)
             {
-                if (//row["COLUMN_NAME"].ToString().Contains(_NUMID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_STRUID) || row["COLUMN_NAME"].ToString().Contains(_STRLASTUID) ||
-                    row["COLUMN_NAME"].ToString().Contains(_DTUDT) || row["COLUMN_NAME"].ToString().Contains(_DTLASTUDT))
+				var type = row["DATA_TYPE"].ToString();
+				var col = row["COLUMN_NAME"].ToString();
+
+				if (col.Contains(_STRUID) || col.Contains(_STRLASTUID) || col.Contains(_DTUDT) || col.Contains(_DTLASTUDT))
                     continue;
 
                 sb.AppendLine();
 
-                //Rules#:INT/NUMBER/DECIMAL/DOUBLE/FLOAT kinds of DataType must be prefixed by NUM
-                if (row["COLUMN_NAME"].ToString().StartsWith("NUM"))
-                {
-                    sb.Append("\n\t\t IF p" + row["COLUMN_NAME"] + ">0 THEN ");
-                    sb.Append("\n\t\t\t strSql := strSql || ' AND T." + row["COLUMN_NAME"] + " = '|| p" + row["COLUMN_NAME"].ToString() + ";");
-                    sb.Append("\n\t\t END IF;");
+				//Rules#:INT/NUMBER/NUMERIC/DECIMAL/DOUBLE/FLOAT kinds of DataType must be prefixed by NUM
+				//if (type.ToUpper().Equals("NUMBER") || type.ToUpper().Equals("NUMERIC") || type.ToUpper().Equals("INT") || type.ToUpper().Equals("INTEGER") || type.ToUpper().Equals("DECIMAL") || type.ToUpper().Equals("DEC") || type.ToUpper().Equals("DOUBLE") || type.ToUpper().Equals("FLOAT") )  //if (col.StartsWith("NUM"))
+				string[] numericTypes = new string[] { "NUMBER", "NUMERIC", "INT", "INTEGER", "SMALLINT", "DECIMAL", "DEC", "DECIMAL", "DOUBLE", "FLOAT", "REAL", "DOUBLE PRECISION" };
+				if (type.ToUpper().In(numericTypes))
+				{
+                    sb.Append($"IF p{col}>0 THEN ".n1t2());
+                    sb.Append($"strSql := strSql || ' AND T.{col} = '|| p" + col + ";".n1t3());
+                    sb.Append("END IF;".n1t2());
                 }
 
-                //Rules#:CHAR/VARCHAR/VARCHAR2/STRING kinds of DataType must be prefixed by STR
-                if (row["COLUMN_NAME"].ToString().StartsWith("STR"))
-                {
-                    sb.Append("\n\t\t IF LENGTH(p" + row["COLUMN_NAME"] + ")>0 THEN ");
-                    sb.Append("\n\t\t\t strSql := strSql || ' AND UPPER(T." + row["COLUMN_NAME"] + ") LIKE ''%' || REPLACE(UPPER(p" + row["COLUMN_NAME"] + "),'''','''''') || '%''';");
-                    sb.Append("\n\t\t\t -- strSql := strSql || ' AND UPPER(T." + row["COLUMN_NAME"] + ")=''' || REPLACE(UPPER(p" + row["COLUMN_NAME"] + "),'''','''''') || '''';");
-                    sb.Append("\n\t\t END IF;");
+				//Rules#:CHAR/VARCHAR/VARCHAR2/STRING/CLOB kinds of DataType must be prefixed by STR
+				//if (type.ToUpper().Equals("CHAR") || type.ToUpper().Equals("VARCHAR") || type.ToUpper().Equals("VARCHAR2") || type.ToUpper().Equals("STRING") || type.ToUpper().Equals("CLOB")) //if (col.StartsWith("STR"))
+				string[] charTypes = new string[] { "CHAR", "NCHAR", "VARCHAR", "VARCHAR2", "NVARCHAR2", "STRING", "LONG", "RAW", "LONG RAW"};
+				if (type.ToUpper().In(charTypes))
+				{
+                    sb.Append($"IF LENGTH(p{col})>0 THEN ".n1t2());
+
+					sb.Append($"strSql := strSql || ' AND UPPER(T.{col}) LIKE ''%' || REPLACE(UPPER(p{col}),'''','''''') || '%''';".n1t3());
+					sb.Append($"-- strSql := strSql || ' AND UPPER(T.{col})=''' || REPLACE(UPPER(p{col}),'''','''''') || '''';".n1t3());
+
+					sb.Append("END IF;".n1t2());
                 }
 
                 //Rules#:DATE/DATETIME kinds of DataType must be prefixed by DT
-                if (row["DATA_TYPE"].ToString().ToUpper().Equals("DATE")) //|| (row["COLUMN_NAME"].ToString().StartsWith("DT"))
+                if (type.ToUpper().Equals("DATE") || type.ToUpper().Equals("TIMESTAMP")) //|| (col.StartsWith("DT"))
                 {
-                    sb.Append("\n\t\t IF p" + row["COLUMN_NAME"] + "From IS NOT NULL  AND p" + row["COLUMN_NAME"] + "To IS NOT NULL  THEN");
-                    sb.Append("\n\t\t\t strSql := strSql || ' AND T." + row["COLUMN_NAME"] + " BETWEEN '''|| p" + row["COLUMN_NAME"] + "From ||''' AND '''||p" + row["COLUMN_NAME"] + "To|| '''';");
-                    sb.Append("\n\t\t ELSIF p" + row["COLUMN_NAME"] + "From IS NOT NULL  AND p" + row["COLUMN_NAME"] + "To IS NULL  THEN");
-                    sb.Append("\n\t\t\t strSql := strSql || ' AND T." + row["COLUMN_NAME"] + " >= '''|| p" + row["COLUMN_NAME"] + "From|| '''' ;");
-                    sb.Append("\n\t\t ELSIF p" + row["COLUMN_NAME"] + "From IS NULL AND p" + row["COLUMN_NAME"] + "To IS NOT NULL  THEN");
-                    sb.Append("\n\t\t\t strSql := strSql || ' AND T." + row["COLUMN_NAME"] + " <= ''' ||p" + row["COLUMN_NAME"] + "To|| '''';");
-                    sb.Append("\n\t\t END IF;");
+                    sb.Append($"IF p{col}From IS NOT NULL  AND p{col}To IS NOT NULL  THEN".n1t2());
+                    sb.Append($"strSql := strSql || ' AND T.{col} BETWEEN '''|| p{col}From ||''' AND '''||p{col}To|| '''';".n1t3());
+                    sb.Append($"ELSIF p{col}From IS NOT NULL  AND p{col}To IS NULL  THEN".n1t2());
+                    sb.Append($"strSql := strSql || ' AND T.{col} >= '''|| p{col}From|| '''' ;".n1t3());
+                    sb.Append($"ELSIF p{col}From IS NULL AND p{col}To IS NOT NULL  THEN".n1t2());
+                    sb.Append($"strSql := strSql || ' AND T.{col} <= ''' ||p{col}To|| '''';".n1t3());
+                    sb.Append($"END IF;".n1t2());
                 }
             }
 
-            sb.Append("\n\n\t\t -- Paging and Sorting Parameters");
-            sb.Append("\n\t\t IF (p_NUMMODE=1) THEN");
-            sb.Append("\n\t\t\t strSql :=strSql || ' ORDER BY ' || UPPER(p_SORTEXPRESSION) ||' ' ||  UPPER(p_SORTDIRECTION);");
-            sb.Append("\n\t\t\t IF(p_MAXROWS >0)THEN");
-            sb.Append("\n\t\t\t\t strSql :=strSql || ' )T)T WHERE ROWINDEX>= '||p_STARTROW||' AND ROWINDEX <'|| (p_STARTROW + p_MAXROWS);");
-            sb.Append("\n\t\t\t ELSE");
-            sb.Append("\n\t\t\t\t strSql :=strSql || ' )T)T';");
-            sb.Append("\n\t\t\t END IF;");
-            sb.Append("\n\t\t END IF;");
+			sb.AppendLine();
+            sb.Append("-- Paging and Sorting Parameters".n1t2());
+            sb.Append("IF (p_NUMMODE=1) THEN".n1t2());
+            sb.Append("strSql :=strSql || ' ORDER BY ' || UPPER(p_SORTEXPRESSION) ||' ' ||  UPPER(p_SORTDIRECTION);".n1t3());
+            sb.Append("IF(p_MAXROWS >0)THEN".n1t3());
+            sb.Append("strSql :=strSql || ' )T)T WHERE ROWINDEX>= '||p_STARTROW||' AND ROWINDEX <'|| (p_STARTROW + p_MAXROWS);".n1t4());
+            sb.Append("ELSE".n1t3());
+            sb.Append("strSql :=strSql || ' )T)T';".n1t4());
+            sb.Append("END IF;".n1t3());
+            sb.Append("END IF;".n1t2());
 
-            sb.Append("\n\n\t\t IF (po_errorcode = 0) THEN");
-            sb.Append("\n\t\t\t OPEN po_cursor FOR strSql ;");
-            sb.Append("\n\t\t END IF;");
+			sb.AppendLine();
+			sb.Append("IF (po_errorcode = 0) THEN".n1t2());
+            sb.Append("OPEN po_cursor FOR strSql ;".n1t3());
+            sb.Append("END IF;".n1t2());
 
-            sb.Append("\n\n\t\t EXCEPTION");
-            sb.Append("\n\t\t\t\t WHEN OTHERS THEN");
-            sb.Append("\n\t\t\t\t po_errorcode := SQLCODE;");
-            sb.Append("\n\t\t\t\t po_errormessage := SQLERRM;");
+			sb.AppendLine();
+			sb.Append("EXCEPTION WHEN OTHERS THEN".n1t2());
+            sb.Append("po_errorcode := SQLCODE;".n1t3());
+            sb.Append("po_errormessage := SQLERRM;".n1t3());
 
-            sb.Append("\n\t END;");
-
-            //MessageBox.Show(sb.ToString());
+            sb.Append("END;".n1t1());
 
             return sb;
         }
