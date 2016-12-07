@@ -6,7 +6,7 @@ Generates Stored Procedure for Oracle and Sql Server database, Data Access Layer
 
 Requirements:
 --------------
-.Net Framework 3.5 SP1 (WPF), 
+.Net Framework (WPF), 
 Oracle Client if you want to generate code from Oracle Database
 
 Configuration:
