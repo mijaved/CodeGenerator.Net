@@ -51,5 +51,4 @@ Select 1 table and click on the buttons to generate the Code for you.
 The generated files will available at the path defided in 
 	<add key="SaveDirectoty" value="D:\\CodeGeneratorFiles\\" />
 
-Happy Coding!!!
-Fast Coding!!!
+
